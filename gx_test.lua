@@ -2,7 +2,7 @@ local gx = nil
 
 -- if gg.alert("Net?", "yes", "no") == 1 then
 if true then
-	local response = gg.makeRequest("http://192.168.1.100:9999/gx.lua")
+	local response = gg.makeRequest("https://raw.githubusercontent.com/gxosty/gx-gg/main/gx.lua")
 	gx = load(response.content)()
 else
 	gx = require("gx")
