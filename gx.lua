@@ -214,7 +214,8 @@ function gx.format_args(args, ind, bool)
 							local name = _v:sub(_s, _e)
 							local var_path = name:sub(name:find(":") + 1, name:find("}") - 1)
 							local var = gx.get_var(var_path)
-							_v = var
+							args[k] = var
+							if type(args[k]) ~= "string" then break end
 						else
 							fe = _e + 1
 						end
@@ -303,10 +304,12 @@ function gx.process_title(title)
 	if type(title) == "table" then
 		for k, v in ipairs(title) do
 			if type(v) == "table" then
-				if #v == 1 then
-					_title = _title..v[1]()
-				else
-					_title = _title..v[1](table.unpack(gx.format_args(v[2], nil, nil)))
+				if #v > 0 then
+					if #v == 1 then
+						_title = _title..v[1]()
+					else
+						_title = _title..v[1](table.unpack(gx.format_args(v[2], nil, nil)))
+					end
 				end
 			else
 				_title = _title..v
