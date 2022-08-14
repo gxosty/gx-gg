@@ -196,14 +196,14 @@ function gx.render_menu(menu, bools)
 end
 
 function gx.format_args(args, ind, bool)
-	for i = 1, #args do
-		if type(args[i]) == "string" then
-			if args[i] == "{gxindex}" then
-				args[i] = ind
-			elseif args[i] == "{gxbool}" then
-				args[i] = bool
+	for k, v in pairs(args) do
+		if type(v) == "string" then
+			if v == "{gxindex}" then
+				args[k] = ind
+			elseif v == "{gxbool}" then
+				args[k] = bool
 			else
-				local _v = tostring(args[i])
+				local _v = tostring(v)
 				local fe = 1
 				while true do
 					local _s = _v:find("{gx:")
@@ -223,8 +223,8 @@ function gx.format_args(args, ind, bool)
 					end
 				end
 			end
-		elseif type(args[i]) == "table" then
-			args[i] = gx.format_args(args[i], ind, bool)
+		elseif type(v) == "table" then
+			args[k] = gx.format_args(args[k], ind, bool)
 		end
 	end
 
