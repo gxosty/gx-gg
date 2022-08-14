@@ -214,7 +214,7 @@ function gx.format_args(args, ind, bool)
 							local name = _v:sub(_s, _e)
 							local var_path = name:sub(name:find(":") + 1, name:find("}") - 1)
 							local var = gx.get_var(var_path)
-							_v = _v:gsub(name, tostring(var))
+							_v = var
 						else
 							fe = _e + 1
 						end
@@ -223,6 +223,8 @@ function gx.format_args(args, ind, bool)
 					end
 				end
 			end
+		elseif type(args[i]) == "table" then
+			args[i] = gx.format_args(args[i], ind, bool)
 		end
 	end
 
