@@ -1,3 +1,8 @@
+-- local response = gg.makeRequest("http://192.168.1.107:9999/json.lua")
+local response = gg.makeRequest("https://raw.githubusercontent.com/gxosty/gx-gg/main/json.lua")
+local json = load(response.content)()
+-- local json = require("json")
+
 local gx = {
 	_nav = nil,
 	_allow = true,
@@ -5,7 +10,9 @@ local gx = {
 	_back = "back",
 	_back_function = nil,
 	vars = {},
-	signs = {[false] = "[-]", [true] = "[+]"}
+	signs = {[false] = "[-]", [true] = "[+]"},
+
+	json = json
 }
 
 -- [[ Menu related functions (I guess) ]] --
@@ -57,6 +64,16 @@ function gx.table_merge(...)
 		end
 	end
 	return result
+end
+
+function gx.round(x, decimals)
+	-- This should be less naive about multiplication and division if you
+	-- care about accuracy around edges like: numbers close to the higher
+	-- values of a float or if you are rounding to large numbers of decimals.
+    local n = 10^(decimals or 0)
+    x = x * n
+    if x >= 0 then x = math.floor(x + 0.5) else x = math.ceil(x - 0.5) end
+    return x / n
 end
 
 function gx.split_string(inputstr, sep)
@@ -145,6 +162,23 @@ function gx.switch_bools(index, bools)
 	return bools
 end
 
+function gx.load_json_file(filename)
+	local file = io.open(filename, "r")
+	if file == nil then 
+		return nil
+	end
+	local content = json.decode(file:read("*a"))
+	file:close()
+
+	return content
+end
+
+function gx.save_json_file(filename, tbl)
+	local file = io.open(filename, "w")
+	file:write(json.encode(tbl))
+	file:close()
+end
+
 function gx.get_var(var_path)
 	if type(var_path) == "string" then
 		var_path = gx.split_string(var_path, ".")
@@ -157,6 +191,28 @@ function gx.get_var(var_path)
 	end
 
 	return var
+end
+
+function gx.set_var(var_path, value)
+	if type(var_path) == "string" then
+		var_path = gx.split_string(var_path, ".")
+	end
+
+	local var = gx.vars
+
+	for i = 1, #var_path - 1 do
+		var = var[var_path[i]]
+	end
+
+	var[var_path[#var_path]] = value
+end
+
+function gx.prompt_set_var(var_path, title)
+	local var = gx.get_var(var_path)
+	local value = gg.prompt({title}, {[1] = var}, {[1] = type(var)})
+	if value ~= nil then
+		gx.set_var(var_path, value[1])
+	end
 end
 
 function gx.render_menu(menu, bools)
@@ -214,6 +270,10 @@ function gx.format_args(args, ind, bool)
 							local name = _v:sub(_s, _e)
 							local var_path = name:sub(name:find(":") + 1, name:find("}") - 1)
 							local var = gx.get_var(var_path)
+							if type(var) == "boolean" then
+								local p = _v:sub(_s - 1, _s - 1)
+								if p == "!" then var = not var end
+							end
 							args[k] = var
 							if type(args[k]) ~= "string" then break end
 						else
@@ -330,10 +390,10 @@ function gx.generate_menu(f)
 	end
 end
 
-function gx.process_pre_function(f)
+function gx.process_a_function(f)
 	if f == nil then return end
 	if type(f) ~= "table" then 
-		gg.toast("\"pre_f\" is not a table")
+		gg.toast("\"pre_f/post_f\" is not a table")
 		return
 	end
 
@@ -385,10 +445,10 @@ function gx.open_menu(menu_name)
 		gg.toast("Menu \""..menu_name.."\" doesn't exist.")
 		return
 	end
-	the_menu = {}
+	local the_menu = {}
 	gx.copy_table(gx._menus[menu_name], the_menu)
 	local allow_stay = false
-	gx.process_pre_function(the_menu.pre_f)
+	gx.process_a_function(the_menu.pre_f)
 	local _title = gx.process_title(the_menu.title)
 
 	if the_menu.type == "back" then
@@ -450,6 +510,12 @@ function gx.open_menu(menu_name)
 		gx.process_single_function(the_menu.f, ind, gx._menus[menu_name].bools)
 	else
 		gx.process_functions(the_menu.functions, ind, gx._menus[menu_name].bools)
+	end
+
+	gx.process_a_function(the_menu.post_f)
+
+	if the_menu.menu_repeat == true then
+		gx.start()
 	end
 end
 
