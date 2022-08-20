@@ -1,7 +1,6 @@
--- local response = gg.makeRequest("http://192.168.1.107:9999/json.lua")
-local response = gg.makeRequest("https://raw.githubusercontent.com/gxosty/gx-gg/main/json.lua")
-local json = load(response.content)()
--- local json = require("json")
+--local response = gg.makeRequest("http://192.168.1.107:9999/json.lua")
+--local json = load(response.content)()
+local json = require("gx.json")
 
 local gx = {
 	_nav = nil,
@@ -515,7 +514,7 @@ function gx.open_menu(menu_name)
 	gx.process_a_function(the_menu.post_f)
 
 	if the_menu.menu_repeat == true then
-		gx.start()
+		gx.open_menu(the_menu.name)
 	end
 end
 
