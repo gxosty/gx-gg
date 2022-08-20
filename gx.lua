@@ -1,7 +1,7 @@
 --local response = gg.makeRequest("http://192.168.1.107:9999/json.lua")
 local response = gg.makeRequest("https://raw.githubusercontent.com/gxosty/gx-gg/main/json.lua")
---local json = load(response.content)()
-local json = require("gx.json")
+local json = load(response.content)()
+--local json = require("gx.json")
 
 local gx = {
 	_nav = nil,
