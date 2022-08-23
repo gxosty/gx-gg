@@ -1,7 +1,7 @@
---local response = gg.makeRequest("http://192.168.1.107:9999/json.lua")
+-- local response = gg.makeRequest("http://192.168.1.107:9999/json.lua")
 local response = gg.makeRequest("https://raw.githubusercontent.com/gxosty/gx-gg/main/json.lua")
 local json = load(response.content)()
---local json = require("gx.json")
+-- local json = require("gx.json")
 
 local gx = {
 	_nav = nil,
@@ -207,6 +207,10 @@ function gx.set_var(var_path, value)
 	var[var_path[#var_path]] = value
 end
 
+function gx.set_loop_interval(interval)
+	gx._interval = interval
+end
+
 function gx.prompt_set_var(var_path, title)
 	local var = gx.get_var(var_path)
 	local value = gg.prompt({title}, {[1] = var}, {[1] = type(var)})
@@ -259,19 +263,18 @@ function gx.format_args(args, ind, bool)
 			elseif v == "{gxbool}" then
 				args[k] = bool
 			else
-				local _v = tostring(v)
 				local fe = 1
 				while true do
-					local _s = _v:find("{gx:")
-					local _e = _v:find("}", fe)
+					local _s = args[k]:find("{gx:")
+					local _e = args[k]:find("}", fe)
 	
 					if _s ~= nil and _e ~= nil then
 						if _e - _s > 0 then
-							local name = _v:sub(_s, _e)
+							local name = args[k]:sub(_s, _e)
 							local var_path = name:sub(name:find(":") + 1, name:find("}") - 1)
 							local var = gx.get_var(var_path)
 							if type(var) == "boolean" then
-								local p = _v:sub(_s - 1, _s - 1)
+								local p = args[k]:sub(_s - 1, _s - 1)
 								if p == "!" then var = not var end
 							end
 							args[k] = var
@@ -311,8 +314,8 @@ function gx.add_menu(menu)
 				gg.toast("Menu with name \"main\" was declared twice, exiting...")
 				os.exit()
 			end
-		elseif menu.name == "main" and menu.type == "back" then
-			gg.toast("Menu with name \"main\" cannot be\"back\" type, exiting...")
+		elseif menu.name == "main" and menu.type ~= "choice" then
+			gg.toast("Menu with name \"main\" must have \"choice\" type only, exiting...")
 			os.exit()
 		end
 	end
@@ -322,7 +325,7 @@ function gx.add_menu(menu)
 		gx._nav[1] = {name = menu.name, allow_stay = true}
 	end
 
-	if menu.type == "choice" or menu.type == "back" then
+	if menu.type == "choice" or menu.type == "back" or menu.type == "xback" then
 		if type(menu.menu[1]) == "function" then
 			if #menu.menu == 1 then
 				menu["use_menu_function"] = true
@@ -341,6 +344,9 @@ function gx.add_menu(menu)
 			menu.menu = list.menu
 			menu.functions = list.functions
 		end
+	else
+		gg.toast("Unrecognized type \""..menu.type.."\", exiting...")
+		os.exit()
 	end
 
 	if menu.f == nil then
@@ -468,14 +474,14 @@ function gx.open_menu(menu_name)
 	local ind = nil
 	local _ib = nil
 
-	if the_menu.type == "back" or the_menu.type == "choice" then
-		if the_menu.type == "back" then
+	if the_menu.type == "choice" or the_menu.type == "back" or the_menu.type == "xback" then
+		if the_menu.type ~= "choice" then
 			table.insert(the_menu.menu, gx._back)
 		end
 		local _m = gx.render_menu(the_menu.menu, the_menu.bools)
 		ind = gg.choice(_m, nil, _title)
 		if ind == nil then return end
-		if the_menu.type == "back" then
+		if the_menu.type ~= "choice" then
 			table.remove(_m)
 
 			if ind == #the_menu.menu then
@@ -505,7 +511,7 @@ function gx.open_menu(menu_name)
 
 	ind = _ib.index
 	gx._menus[menu_name].bools = _ib.bools
-		
+
 	if the_menu.use_single_function == true then
 		gx.process_single_function(the_menu.f, ind, gx._menus[menu_name].bools)
 	else
@@ -544,6 +550,55 @@ function gx.start()
 
 	gx.nav_update()
 	gx.continue()
+end
+
+function gx.isClicked(visible)
+	if gg.isVisible() then
+		gg.setVisible(visible or false)
+		return true
+	end
+	return false
+end
+
+function gx.loop(interval, update_f, visible)
+	gx._interval = interval
+	gg.setVisible(false)
+
+	while true do
+		if update_f == nil then
+			while true do
+				if gx.isClicked(visible) then
+					gx.start()
+					if visible then
+						while true do
+							if not gg.isVisible() then
+								break
+							end
+							gg.sleep(gx._interval)
+						end
+					end
+				end
+				gg.sleep(gx._interval)
+			end
+		else
+			while true do
+				if gx.isClicked(visible) then
+					gx.start()
+					if visible then
+						while true do
+							if not gg.isVisible() then
+								break
+							end
+							update_f()
+							gg.sleep(gx._interval)
+						end
+					end
+				end
+				update_f()
+				gg.sleep(gx._interval)
+			end
+		end
+	end
 end
 
 -- [[ Editor functions ]] --
