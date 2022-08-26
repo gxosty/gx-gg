@@ -1,5 +1,5 @@
-local response = gg.makeRequest("https://raw.githubusercontent.com/gxosty/gx-gg/main/gx.lua")
-local gx = load(response.content)()
+local response = gg.makeRequest("https://raw.githubusercontent.com/gxosty/gx-gg/main/gx.lua")	-- getting "gx" code
+local gx = load(response.content)()																-- executing the code and declaring gx
 
 -- a function
 
