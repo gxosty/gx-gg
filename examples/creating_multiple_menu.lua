@@ -44,7 +44,7 @@ gx.add_menu({
 -- "multi_choice_s" is more like a switcher (enable/disable), it is better to use with gx language. It triggers functions when you switch them in menu
 
 gx.add_menu({
-	title = "Choice menu", -- Menu title
+	title = "Multi Choice menu", -- Menu title
 	name = "mchmenu", -- Menu name, note that you can write any name that you want. You will open menus by their name.
 	menu = {
 		{"Test 1", {gg.alert, {"test1"}}}, -- changing to alert for more understanding
@@ -57,7 +57,7 @@ gx.add_menu({
 -- "multi_choice_s" type. You may call it a switcher menu if you want
 
 gx.add_menu({
-	title = "Choice menu", -- Menu title
+	title = "Multi Choice (selected) menu", -- Menu title
 	name = "mchsmenu", -- Menu name, note that you can write any name that you want. You will open menus by their name.
 	menu = {
 
