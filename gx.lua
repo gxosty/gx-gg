@@ -1,7 +1,7 @@
--- local response = gg.makeRequest("http://192.168.1.107:9999/json.lua")
+-- local response = gg.makeRequest("http://192.168.1.100:9999/json.lua")
 local response = gg.makeRequest("https://raw.githubusercontent.com/gxosty/gx-gg/main/json.lua")
 local json = load(response.content)()
--- local json = require("json")
+-- local json = require("gx.json")
 
 local gx = {
 	_nav = nil,
@@ -85,6 +85,14 @@ function gx.split_string(inputstr, sep)
 		table.insert(t, str)
 	end
 	return t
+end
+
+function gx.map(tbl, f)
+    local t = {}
+    for k,v in pairs(tbl) do
+        t[k] = f(v)
+    end
+    return t
 end
 
 function gx.sign(b)
@@ -609,11 +617,19 @@ gx.editor = {
 		Q = gg.TYPE_QWORD,
 		F = gg.TYPE_FLOAT,
 		B = gg.TYPE_BYTE
-	}
+	},
+	types_str = {"D", "Q", "F", "B"}
 }
 
-gx.editor.set = function(values)
-	for k, v in ipairs(values) do
+gx.editor.set = function(data, bool)
+	if type(data) == "string" then
+		data = gx.editor.parser.parse(data)
+		for k, v in ipairs(data) do
+			v.bool = bool
+		end
+	end
+
+	for k, v in ipairs(data) do
 		if type(v.flags) == "string" then
 			v.flags = gx.editor.types[v.flags]
 		end
@@ -625,10 +641,17 @@ gx.editor.set = function(values)
 		end
 	end
 
-	gg.setValues(values)
+	gg.setValues(data)
 end
 
-gx.editor.get = function(data)
+gx.editor.get = function(data, bool)
+	if type(data) == "string" then
+		data = gx.editor.parser.parse(data)
+		for k, v in ipairs(data) do
+			v.bool = bool
+		end
+	end
+
 	for k, v in ipairs(data) do
 		if type(v.flags) == "string" then
 			v.flags = gx.editor.types[v.flags]
@@ -682,7 +705,14 @@ gx.editor.get_string = function(data)
 	return values
 end
 
-gx.editor.switch = function(data)
+gx.editor.switch = function(data, bool)
+	if type(data) == "string" then
+		data = gx.editor.parser.parse(data)
+		for k, v in ipairs(data) do
+			v.bool = bool
+		end
+	end
+
 	for k, v in ipairs(data) do
 		if v.bool == true then
 			if type(v.value) == "table" then
@@ -703,5 +733,52 @@ gx.editor.switch = function(data)
 
 	gx.editor.set(data)
 end
+
+gx.editor.parser = {
+	parse = function(text) -- address = A, flags = [D, F, Q, B], freeze = f
+		local adds = {}
+		local texts = gx.split_string(text, ";")
+	
+		for k, v in ipairs(texts) do
+			adds[#adds + 1] = {}
+			local _v = v:gsub("%s+|", "|"):gsub("|%s+", "|")
+			local results = gx.split_string(_v)
+			for i, j in ipairs(results) do
+				local suf = j:sub(#j, #j)
+				if suf == "a" then
+					adds[#adds].address = tonumber(j:sub(1, #j - 1))
+				else
+					if gx.indexof(suf, gx.editor.types_str) or suf == "f" then
+						local t = j:find("|")
+						local tx = j
+						if t == nil then
+							if suf == "f" then
+								adds[#adds].freeze = true
+								tx = tx:sub(1, #tx - 1)
+							end
+							adds[#adds].flags = tx:sub(#tx, #tx)
+							adds[#adds].value = tonumber(tx:sub(1, #tx - 1))
+						else
+							local v1, v2, f1, f2
+							v1, v2 = table.unpack(gx.split_string(j, "|"))
+							f1 = v1:sub(#v1, #v1)
+							f2 = v2:sub(#v2, #v2)
+							adds[#adds].freeze = {f1 == "f", f2 == "f"}
+							if adds[#adds].freeze[1] then
+								v1 = v1:sub(1, #v1 - 1)
+							end
+							if adds[#adds].freeze[2] then
+								v2 = v2:sub(1, #v2 - 1)
+							end
+							adds[#adds].flags = v2:sub(#v2, #v2)
+							adds[#adds].value = {v1:sub(1, #v1 - 1), v2:sub(1, #v2 - 1)}
+						end
+					end
+				end
+			end
+		end
+		return adds
+	end
+}
 
 return gx
