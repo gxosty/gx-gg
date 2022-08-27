@@ -1,7 +1,9 @@
 -- See the first example "choice_menu.lua" for more details
 
-local response = gg.makeRequest("https://raw.githubusercontent.com/gxosty/gx-gg/main/gx.lua")
-local gx = load(response.content)()
+-- local response = gg.makeRequest("https://raw.githubusercontent.com/gxosty/gx-gg/main/gx.lua")
+-- local gx = load(response.content)()
+
+local gx = require("gx")
 
 gx.add_menu({
 	title = "Choice menu example",	-- Menu title

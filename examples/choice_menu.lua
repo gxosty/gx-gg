@@ -1,5 +1,7 @@
-local response = gg.makeRequest("https://raw.githubusercontent.com/gxosty/gx-gg/main/gx.lua")	-- getting "gx" code
-local gx = load(response.content)()																-- executing the code and declaring gx
+-- local response = gg.makeRequest("https://raw.githubusercontent.com/gxosty/gx-gg/main/gx.lua")	-- getting "gx" code
+-- local gx = load(response.content)()																-- executing the code and declaring gx
+
+local gx = require("gx")																		-- to use from local storage
 
 -- a function
 
