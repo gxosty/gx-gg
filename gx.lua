@@ -315,7 +315,7 @@ function gx.add_menu(menu)
 				os.exit()
 			end
 		elseif menu.name == "main" and menu.type == "back" or menu.type == "xback" then
-			gg.toast("Menu with name \"main\" must have \"choice\" type only, exiting...")
+			gg.toast("Menu with name \"main\" cannot be \""..menu.type.."\" type, exiting...")
 			os.exit()
 		end
 	end
