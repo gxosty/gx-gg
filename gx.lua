@@ -9,6 +9,8 @@ local gx = {
 	_menus = {},
 	_back = "back",
 	_back_function = nil,
+	_lang = nil,
+	_langs = {},
 	vars = {},
 	signs = {[false] = "[-]", [true] = "[+]"},
 
@@ -39,6 +41,30 @@ end
 function gx.indexof(a, tbl)
 	for _,a_ in ipairs(tbl) do if a_==a then return true end end
 	return false
+end
+
+-- Return the first index with the given value (or nil if not found).
+function gx.get_ind(array, value)
+    for i, v in ipairs(array) do
+        if v == value then
+            return i
+        end
+    end
+    return nil
+end
+
+function gx.get_ind_h_next(array, value)
+	local found = false
+	local first = nil
+    for i, v in pairs(array) do
+    	if not(first) then first = i end
+    	if found then return i end
+        if i == value then
+			found = true
+        end
+    end
+    if found then return first end
+    return nil
 end
 
 function gx.table_difference(a, b)
@@ -255,8 +281,10 @@ function gx.render_menu(menu, bools)
 				break
 			end
 		end
+		if _v == "{gxnil}" then _v = nil else
 		_v = _v:gsub("{gxindex}", tostring(k))
 		_v = _v:gsub("{gxsign}", gx.sign(bools[k]))
+		end
 		table.insert(_menu, _v)
 	end
 
@@ -373,6 +401,60 @@ end
 
 gx._back_function = gx.go_back
 
+function gx.set_language(l)
+	gx._lang = l
+end
+
+function gx.load_languages(tbl)
+	gx._langs = tbl
+end
+
+function gx.get_sentence(sname)
+	if gx._langs[gx._lang][sname] ~= nil then return gx._langs[gx._lang][sname]	end
+	return sname
+end
+
+function gx.switch_language()
+	gx._lang = gx.get_ind_h_next(gx._langs, gx._lang)
+end
+
+function gx.set_menu_lang(menu_name)
+	gx._menus[menu_name].lang = gx._lang
+
+	if gx._menus[menu_name]._menu == nil then
+		gx._menus[menu_name]._menu = {}
+		gx.copy_table(gx._menus[menu_name].menu, gx._menus[menu_name]._menu)
+	else
+		gx._menus[menu_name].menu = {}
+		gx.copy_table(gx._menus[menu_name]._menu, gx._menus[menu_name].menu)
+	end
+
+	if gx._menus[menu_name].use_menu_functon then
+		gx._menus[menu_name].menu = gx.generate_menu(gx._menus[menu_name].menu)
+	end
+
+	for k, v in pairs(gx._menus[menu_name].menu) do
+		local fe = 1
+		while true do
+			local _s = gx._menus[menu_name].menu[k]:find("{gx@")
+			local _e = gx._menus[menu_name].menu[k]:find("}", fe)
+
+			if _s ~= nil and _e ~= nil then
+				if _e - _s > 0 then
+					local name = gx._menus[menu_name].menu[k]:sub(_s, _e)
+					local sname = name:sub(name:find("@") + 1, name:find("}") - 1)
+					local sentence = gx.get_sentence(sname)
+					gx._menus[menu_name].menu[k] = gx._menus[menu_name].menu[k]:gsub(name, sentence)
+				else
+					fe = _e + 1
+				end
+			else
+				break
+			end
+		end
+	end
+end
+
 function gx.process_title(title)
 	_title = ""
 	if type(title) == "table" then
@@ -458,7 +540,10 @@ function gx.open_menu(menu_name)
 	if gx._menus[menu_name] == nil then
 		gg.toast("Menu \""..menu_name.."\" doesn't exist.")
 		return
+	elseif gx._lang ~= gx._menus[menu_name].lang or gx._menus[menu_name].use_menu_functon then
+		gx.set_menu_lang(menu_name)
 	end
+
 	local the_menu = {}
 	gx.copy_table(gx._menus[menu_name], the_menu)
 	local allow_stay = false
@@ -475,7 +560,7 @@ function gx.open_menu(menu_name)
 		gx.add_to_nav({name = the_menu.name, allow_stay = allow_stay})
 	end
 
-	if the_menu.use_menu_function == true then
+	if the_menu.use_menu_function == true and type(the_menu.menu[1]) == "function" then
 		the_menu.menu = gx.generate_menu(the_menu.menu)
 	end
 
