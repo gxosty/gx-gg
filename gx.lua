@@ -424,13 +424,33 @@ function gx.set_menu_lang(menu_name)
 	if gx._menus[menu_name]._menu == nil then
 		gx._menus[menu_name]._menu = {}
 		gx.copy_table(gx._menus[menu_name].menu, gx._menus[menu_name]._menu)
+		gx._menus[menu_name]._title = gx._menus[menu_name].title
 	else
 		gx._menus[menu_name].menu = {}
 		gx.copy_table(gx._menus[menu_name]._menu, gx._menus[menu_name].menu)
+		gx._menus[menu_name].title = gx._menus[menu_name]._title
 	end
 
 	if gx._menus[menu_name].use_menu_functon then
 		gx._menus[menu_name].menu = gx.generate_menu(gx._menus[menu_name].menu)
+	end
+
+	while true do
+		local _s = gx._menus[menu_name].title:find("{gx@")
+		local _e = gx._menus[menu_name].title:find("}", fe)
+
+		if _s ~= nil and _e ~= nil then
+			if _e - _s > 0 then
+				local name = gx._menus[menu_name].title:sub(_s, _e)
+				local sname = name:sub(name:find("@") + 1, name:find("}") - 1)
+				local sentence = gx.get_sentence(sname)
+				gx._menus[menu_name].title = gx._menus[menu_name].title:gsub(name, sentence)
+			else
+				fe = _e + 1
+			end
+		else
+			break
+		end
 	end
 
 	for k, v in pairs(gx._menus[menu_name].menu) do
