@@ -844,11 +844,9 @@ gx.editor.switch = function(data, bool)
 end
 
 gx.editor.parser = {
-	parse = function(text) -- address = A, flags = [D, F, Q, B], freeze = f
+	parse = function(text) -- address = a, flags = [D, F, Q, B], freeze = f
 		local adds = {}
-		gg.alert(text)
 		local texts = gx.split_string(text, ";")
-		gg.alert(tostring(texts))
 	
 		for k, v in ipairs(texts) do
 			adds[#adds + 1] = {}
