@@ -381,7 +381,11 @@ function gx.add_menu(menu)
 			menu.functions = list.functions
 		end
 	else
-		gg.toast("Unrecognized type \""..menu.type.."\", exiting...")
+		if menu.type == nil then
+			gg.alert("Menu \""..menu.name.."\" has nil type, exiting...")
+		else
+			gg.toast("Unrecognized type \""..menu.type.."\", exiting...")
+		end
 		os.exit()
 	end
 
