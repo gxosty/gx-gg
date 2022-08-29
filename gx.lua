@@ -822,6 +822,8 @@ gx.editor.switch = function(data, bool)
 		end
 	end
 
+	gg.alert(tostring(data))
+
 	for k, v in ipairs(data) do
 		if v.bool == true then
 			if type(v.value) == "table" then
