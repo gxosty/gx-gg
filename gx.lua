@@ -343,6 +343,10 @@ function gx.set_signs(t)
 	gx.signs = t
 end
 
+function gx.set_gg_visible(visible)
+	gx._visible = visible
+end
+
 function gx.add_menu(menu)
 	if gx._menus ~= 0 then
 		if gx._menus["main"] ~= nil then
@@ -428,32 +432,50 @@ function gx.set_menu_lang(menu_name)
 	if gx._menus[menu_name]._menu == nil then
 		gx._menus[menu_name]._menu = {}
 		gx.copy_table(gx._menus[menu_name].menu, gx._menus[menu_name]._menu)
-		gx._menus[menu_name]._title = gx._menus[menu_name].title
+		if type(gx._menus[menu_name].title) == "table" then
+			gx._menus[menu_name]._title = {}
+			gx.copy_table(gx._menus[menu_name].title, gx._menus[menu_name]._title)
+		else
+			gx._menus[menu_name]._title = gx._menus[menu_name].title
+		end
 	else
 		gx._menus[menu_name].menu = {}
 		gx.copy_table(gx._menus[menu_name]._menu, gx._menus[menu_name].menu)
-		gx._menus[menu_name].title = gx._menus[menu_name]._title
+		if type(gx._menus[menu_name]._title) == "table" then
+			gx._menus[menu_name].title = {}
+			gx.copy_table(gx._menus[menu_name]._title, gx._menus[menu_name].title)
+		else
+			gx._menus[menu_name].title = gx._menus[menu_name]._title
+		end
 	end
 
 	if gx._menus[menu_name].use_menu_functon then
 		gx._menus[menu_name].menu = gx.generate_menu(gx._menus[menu_name].menu)
 	end
 
-	while true do
-		local _s = gx._menus[menu_name].title:find("{gx@")
-		local _e = gx._menus[menu_name].title:find("}", fe)
+	if type(gx._menus[menu_name].title) == "string" then
+		gx._menus[menu_name].title = {gx._menus[menu_name].title}
+	end
 
-		if _s ~= nil and _e ~= nil then
-			if _e - _s > 0 then
-				local name = gx._menus[menu_name].title:sub(_s, _e)
-				local sname = name:sub(name:find("@") + 1, name:find("}") - 1)
-				local sentence = gx.get_sentence(sname)
-				gx._menus[menu_name].title = gx._menus[menu_name].title:gsub(name, sentence)
-			else
-				fe = _e + 1
+	for k, v in pairs(gx._menus[menu_name].title) do
+		if type(gx._menus[menu_name].title[k]) == "string" then
+			while true do
+				local _s = gx._menus[menu_name].title[k]:find("{gx@")
+				local _e = gx._menus[menu_name].title[k]:find("}", fe)
+	
+				if _s ~= nil and _e ~= nil then
+					if _e - _s > 0 then
+						local name = gx._menus[menu_name].title[k]:sub(_s, _e)
+						local sname = name:sub(name:find("@") + 1, name:find("}") - 1)
+						local sentence = gx.get_sentence(sname)
+						gx._menus[menu_name].title[k] = gx._menus[menu_name].title[k]:gsub(name, sentence)
+					else
+						fe = _e + 1
+					end
+				else
+					break
+				end
 			end
-		else
-			break
 		end
 	end
 
@@ -637,7 +659,7 @@ function gx.open_menu(menu_name)
 
 	gx.process_a_function(the_menu.post_f)
 
-	if the_menu.menu_repeat == true then
+	if the_menu.menu_repeat == true and gx._nav[#gx._nav].name == menu_name then
 		gx.open_menu(the_menu.name)
 	end
 end
@@ -679,14 +701,15 @@ end
 
 function gx.loop(interval, update_f, visible)
 	gx._interval = interval
+	gx._visible = visible
 	gg.setVisible(false)
 
 	while true do
 		if update_f == nil then
 			while true do
-				if gx.isClicked(visible) then
+				if gx.isClicked(gx._visible) then
 					gx.start()
-					if visible then
+					if gx._visible then
 						while true do
 							if not gg.isVisible() then
 								break
@@ -699,9 +722,9 @@ function gx.loop(interval, update_f, visible)
 			end
 		else
 			while true do
-				if gx.isClicked(visible) then
+				if gx.isClicked(gx._visible) then
 					gx.start()
-					if visible then
+					if gx._visible then
 						while true do
 							if not gg.isVisible() then
 								break
