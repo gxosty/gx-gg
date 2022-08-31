@@ -11,6 +11,7 @@ local gx = {
 	_back_function = nil,
 	_lang = nil,
 	_langs = {},
+	_visible = false,
 	vars = {},
 	signs = {[false] = "[-]", [true] = "[+]"},
 
