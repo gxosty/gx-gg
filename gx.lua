@@ -6,6 +6,7 @@ local json = load(response.content)()
 local gx = {
 	_nav = nil,
 	_allow = true,
+	_block_repeat = false,
 	_menus = {},
 	_back = "back",
 	_back_function = nil,
@@ -246,9 +247,10 @@ function gx.set_loop_interval(interval)
 	gx._interval = interval
 end
 
-function gx.prompt_set_var(var_path, title)
+function gx.prompt_set_var(var_path, title, t)
 	local var = gx.get_var(var_path)
-	local value = gg.prompt({title}, {[1] = var}, {[1] = type(var)})
+	if t == nil then t = type(var) end
+	local value = gg.prompt({title}, {[1] = var}, {[1] = t})
 	if value ~= nil then
 		gx.set_var(var_path, value[1])
 	end
@@ -414,12 +416,17 @@ function gx.set_language(l)
 	gx._lang = l
 end
 
+function gx.set_fallback_language(fl)
+	gx._fback_lang = fl
+end
+
 function gx.load_languages(tbl)
 	gx._langs = tbl
 end
 
-function gx.get_sentence(sname)
-	if gx._langs[gx._lang][sname] ~= nil then return gx._langs[gx._lang][sname]	end
+function gx.get_sentence(sname, l)
+	if l == nil then l = gx._lang end
+	if gx._langs[l][sname] ~= nil then return gx._langs[l][sname] end
 	return sname
 end
 
@@ -454,52 +461,8 @@ function gx.set_menu_lang(menu_name)
 		gx._menus[menu_name].menu = gx.generate_menu(gx._menus[menu_name].menu)
 	end
 
-	if type(gx._menus[menu_name].title) == "string" then
-		gx._menus[menu_name].title = {gx._menus[menu_name].title}
-	end
-
-	for k, v in pairs(gx._menus[menu_name].title) do
-		if type(gx._menus[menu_name].title[k]) == "string" then
-			while true do
-				local _s = gx._menus[menu_name].title[k]:find("{gx@")
-				local _e = gx._menus[menu_name].title[k]:find("}", fe)
-	
-				if _s ~= nil and _e ~= nil then
-					if _e - _s > 0 then
-						local name = gx._menus[menu_name].title[k]:sub(_s, _e)
-						local sname = name:sub(name:find("@") + 1, name:find("}") - 1)
-						local sentence = gx.get_sentence(sname)
-						gx._menus[menu_name].title[k] = gx._menus[menu_name].title[k]:gsub(name, sentence)
-					else
-						fe = _e + 1
-					end
-				else
-					break
-				end
-			end
-		end
-	end
-
-	for k, v in pairs(gx._menus[menu_name].menu) do
-		local fe = 1
-		while true do
-			local _s = gx._menus[menu_name].menu[k]:find("{gx@")
-			local _e = gx._menus[menu_name].menu[k]:find("}", fe)
-
-			if _s ~= nil and _e ~= nil then
-				if _e - _s > 0 then
-					local name = gx._menus[menu_name].menu[k]:sub(_s, _e)
-					local sname = name:sub(name:find("@") + 1, name:find("}") - 1)
-					local sentence = gx.get_sentence(sname)
-					gx._menus[menu_name].menu[k] = gx._menus[menu_name].menu[k]:gsub(name, sentence)
-				else
-					fe = _e + 1
-				end
-			else
-				break
-			end
-		end
-	end
+	gx._menus[menu_name].title = gx.text.translate(gx._menus[menu_name].title)
+	gx._menus[menu_name].menu = gx.text.translate(gx._menus[menu_name].menu)
 end
 
 function gx.process_title(title)
@@ -660,9 +623,11 @@ function gx.open_menu(menu_name)
 
 	gx.process_a_function(the_menu.post_f)
 
-	if the_menu.menu_repeat == true and gx._nav[#gx._nav].name == menu_name then
+	if the_menu.menu_repeat == true and gx._nav[#gx._nav].name == menu_name and gx._block_repeat ~= true then
 		gx.open_menu(the_menu.name)
 	end
+
+	gx._block_repeat = false
 end
 
 function gx.nav_update()
@@ -754,12 +719,9 @@ gx.editor = {
 	types_str = {"D", "Q", "F", "B"}
 }
 
-gx.editor.set = function(data, bool)
+gx.editor.set = function(data)
 	if type(data) == "string" then
 		data = gx.editor.parser.parse(data)
-		for k, v in ipairs(data) do
-			v.bool = bool
-		end
 	end
 
 	for k, v in ipairs(data) do
@@ -777,12 +739,45 @@ gx.editor.set = function(data, bool)
 	gg.setValues(data)
 end
 
-gx.editor.get = function(data, bool)
+gx.editor.prompt_set = function(data, titles)
+	if type(titles) ~= "table" then
+		gg.toast("Argument \"titles\" is given wrong")
+		return
+	end
+
 	if type(data) == "string" then
 		data = gx.editor.parser.parse(data)
-		for k, v in ipairs(data) do
-			v.bool = bool
+	end
+
+	local _types = {}
+
+	for k, v in ipairs(data) do
+		if type(v.flags) == "string" then
+			v.flags = gx.editor.types[v.flags]
 		end
+		table.insert(_types, "number")
+	end
+
+	local _data = gx.editor.get(data)
+
+	for k, v in pairs(_data) do
+		_data[k] = _data[k].value
+	end
+
+	local values = gg.prompt(titles, _data, _types)
+	if values == nil then return end
+
+	for k, v in ipairs(data) do
+		if values[k] == "" then values[k] = _data[k] end
+		v.value = values[k]
+	end
+	gx._block_repeat = true
+	gx.editor.set(data)
+end
+
+gx.editor.get = function(data)
+	if type(data) == "string" then
+		data = gx.editor.parser.parse(data)
 	end
 
 	for k, v in ipairs(data) do
@@ -913,5 +908,61 @@ gx.editor.parser = {
 		return adds
 	end
 }
+
+gx.text = {
+	ucase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+	lcase = "abcdefghijklmnopqrstuvwxyz",
+	numbers = "0123456789",
+	punc = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
+}
+
+gx.text.translate = function(data, l)
+	if l == nil then l = gx._lang end
+	if gx._langs[l] == nil then
+		gg.toast("Language undefined: \""..tostring(l).."\". Falling back to \""..gx._fback_lang.."\"")
+		l = gx._fback_lang
+	end
+	if gx._langs[l] == nil then
+		gg.toast("Language undefined: "..tostring(l))
+		return data
+	end
+
+	local is_string = false
+
+	if type(data) == "string" then
+		data = {data}
+		is_string = true
+	end
+
+	for k, v in pairs(data) do
+		if type(data[k]) == "string" then
+			while true do
+				local _s = data[k]:find("{gx@")
+				local _e = data[k]:find("}", fe)
+	
+				if _s ~= nil and _e ~= nil then
+					if _e - _s > 0 then
+						local name = data[k]:sub(_s, _e)
+						local sname = name:sub(name:find("@") + 1, name:find("}") - 1)
+						local sentence = gx.get_sentence(sname, l)
+						data[k] = data[k]:gsub(name, sentence)
+					else
+						fe = _e + 1
+					end
+				else
+					break
+				end
+			end
+		elseif type(data[k]) == "table" then
+			data[k] = gx.text.translate(data[k])
+		end
+	end
+
+	if is_string then
+		data = data[1]
+	end
+
+	return data
+end
 
 return gx
