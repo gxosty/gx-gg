@@ -1,11 +1,10 @@
--- local response = gg.makeRequest("http://192.168.1.100:9999/json.lua")
+-- local response = gg.makeRequest("http://192.168.1.108:9999/json.lua")
 local response = gg.makeRequest("https://raw.githubusercontent.com/gxosty/gx-gg/main/json.lua")
 local json = load(response.content)()
 -- local json = require("gx.json")
 
 local gx = {
 	_nav = nil,
-	_allow = true,
 	_block_repeat = false,
 	_menus = {},
 	_back = "back",
@@ -41,7 +40,7 @@ function gx.copy_table(from, to_table)
 end
 
 function gx.indexof(a, tbl)
-	for _,a_ in ipairs(tbl) do if a_==a then return true end end
+	for _,a_ in pairs(tbl) do if a_==a then return true end end
 	return false
 end
 
@@ -247,11 +246,14 @@ function gx.set_loop_interval(interval)
 	gx._interval = interval
 end
 
-function gx.prompt_set_var(var_path, title, t)
+function gx.prompt_set_var(var_path, title, t, f)
 	local var = gx.get_var(var_path)
 	if t == nil then t = type(var) end
 	local value = gg.prompt({title}, {[1] = var}, {[1] = t})
 	if value ~= nil then
+		if f then
+			value = f(value)
+		end
 		gx.set_var(var_path, value[1])
 	end
 end
@@ -427,7 +429,7 @@ end
 function gx.get_sentence(sname, l)
 	if l == nil then l = gx._lang end
 	if gx._langs[l][sname] ~= nil then return gx._langs[l][sname] end
-	return sname
+	return gx._langs[gx._fback_lang][sname]
 end
 
 function gx.switch_language()
@@ -739,11 +741,13 @@ gx.editor.set = function(data)
 	gg.setValues(data)
 end
 
-gx.editor.prompt_set = function(data, titles)
+gx.editor.prompt_set = function(data, titles, f)
 	if type(titles) ~= "table" then
 		gg.toast("Argument \"titles\" is given wrong")
 		return
 	end
+
+	titles = gx.text.translate(titles)
 
 	if type(data) == "string" then
 		data = gx.editor.parser.parse(data)
@@ -771,6 +775,11 @@ gx.editor.prompt_set = function(data, titles)
 		if values[k] == "" then values[k] = _data[k] end
 		v.value = values[k]
 	end
+
+	if f then
+		data = f(data)
+	end
+
 	gx._block_repeat = true
 	gx.editor.set(data)
 end
@@ -909,6 +918,8 @@ gx.editor.parser = {
 	end
 }
 
+-- [[ Text Processing ]] --
+
 gx.text = {
 	ucase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
 	lcase = "abcdefghijklmnopqrstuvwxyz",
@@ -937,6 +948,7 @@ gx.text.translate = function(data, l)
 	for k, v in pairs(data) do
 		if type(data[k]) == "string" then
 			while true do
+				i = i + 1
 				local _s = data[k]:find("{gx@")
 				local _e = data[k]:find("}", fe)
 	
@@ -954,7 +966,7 @@ gx.text.translate = function(data, l)
 				end
 			end
 		elseif type(data[k]) == "table" then
-			data[k] = gx.text.translate(data[k])
+			data[k] = gx.text.translate(data[k], l)
 		end
 	end
 
@@ -963,6 +975,68 @@ gx.text.translate = function(data, l)
 	end
 
 	return data
+end
+
+-- [[ Extractors ]] --
+
+gx.extract = {}
+
+gx.extract.values = function(tbl)
+	local _tbl = {}
+
+	for k, v in ipairs(tbl) do
+		table.insert(_tbl, v.value)
+	end
+
+	return _tbl
+end
+
+gx.extract.address = function(tbl)
+	local _tbl = {}
+
+	for k, v in ipairs(tbl) do
+		table.insert(_tbl, v.address)
+	end
+
+	return _tbl
+end
+
+gx.extract.arg = function(tbl, arg)
+	local _tbl = {}
+
+	for k, v in ipairs(tbl) do
+		table.insert(_tbl, v[arg])
+	end
+
+	return _tbl
+end
+
+-- [[ Packers ]] --
+
+gx.pack = {}
+
+gx.pack.values = function(tbl, values)
+	for k, v in pairs(values) do
+		tbl[k].value = v
+	end
+
+	return tbl
+end
+
+gx.pack.address = function(tbl, addresses)
+	for k, v in pairs(addresses) do
+		tbl[k].addresses = v
+	end
+
+	return tbl
+end
+
+gx.pack.args = function(tbl, values, arg_name)
+	for k, v in pairs(values) do
+		tbl[k][arg_name] = v
+	end
+
+	return tbl
 end
 
 return gx
