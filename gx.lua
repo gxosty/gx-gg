@@ -948,7 +948,6 @@ gx.text.translate = function(data, l)
 	for k, v in pairs(data) do
 		if type(data[k]) == "string" then
 			while true do
-				i = i + 1
 				local _s = data[k]:find("{gx@")
 				local _e = data[k]:find("}", fe)
 	
