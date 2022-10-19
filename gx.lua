@@ -703,7 +703,9 @@ function gx.loop(interval, update_f, visible)
 					end
 				end
 				update_f()
-				gg.sleep(gx._interval)
+				if gx._interval ~= 0 then
+					gg.sleep(gx._interval)
+				end
 			end
 		end
 	end
@@ -802,19 +804,19 @@ gx.editor.set_string = function(data)
 	local values = {}
 
 	for k, v in ipairs(data) do
-		local _address = data[1]
+		local _address = v[1]
 		local _bytes = gg.bytes(v[2])
-		local _len = data[3]
+		local _len = v[3]
 	
 		if #_bytes < _len then
 			local _len2 = _len - #_bytes
 			for i = 1, _len2 do
-				table.insert(bytes,0)
+				table.insert(_bytes,0)
 			end
 		end
 	
 		for i = 1, _len do
-			table.insert(values, {address = _address + (i - 1), flags = gg.TYPE_BYTE, value = bytes[i]})
+			table.insert(values, {address = _address + (i - 1), flags = gg.TYPE_BYTE, value = _bytes[i]})
 		end
 	end
 
@@ -914,6 +916,7 @@ gx.editor.parser = {
 				end
 			end
 		end
+		-- gg.alert(tostring(adds))
 		return adds
 	end
 }
@@ -948,7 +951,6 @@ gx.text.translate = function(data, l)
 	for k, v in pairs(data) do
 		if type(data[k]) == "string" then
 			while true do
-				i = i + 1
 				local _s = data[k]:find("{gx@")
 				local _e = data[k]:find("}", fe)
 	
