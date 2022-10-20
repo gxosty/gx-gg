@@ -831,8 +831,8 @@ gx.editor.get_string = function(data)
 		local _address = v[1]
 		local _len = v[2]
 
-		for i = 0, amount do
-			_byte = gx.editor.get({{address = _address + i, flags = 'B'}})[1]
+		for i = 0, _len do
+			_byte = gx.editor.get({{address = _address + i, flags = 'B'}})[1].value
 	
 			if _byte < 1 then break end
 	
