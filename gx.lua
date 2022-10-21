@@ -429,7 +429,9 @@ end
 function gx.get_sentence(sname, l)
 	if l == nil then l = gx._lang end
 	if gx._langs[l][sname] ~= nil then return gx._langs[l][sname] end
-	return gx._langs[gx._fback_lang][sname]
+	if gx._langs[gx._fback_lang][sname] ~= nil then return gx._langs[gx._fback_lang][sname] end
+	return sname
+	-- return "hey"
 end
 
 function gx.switch_language()
