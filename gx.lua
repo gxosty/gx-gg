@@ -802,7 +802,7 @@ gx.editor.get = function(data)
 	return gg.getValues(data)
 end
 
-gx.editor.set_string = function(data)
+gx.editor.set_string = function(data, freeze)
 	local values = {}
 
 	for k, v in ipairs(data) do
@@ -818,10 +818,15 @@ gx.editor.set_string = function(data)
 		end
 	
 		for i = 1, _len do
-			table.insert(values, {address = _address + (i - 1), flags = gg.TYPE_BYTE, value = _bytes[i]})
+			table.insert(values, {address = _address + (i - 1), flags = gg.TYPE_BYTE, value = _bytes[i], freeze = freeze})
 		end
 	end
 
+	if freeze then
+		gg.addListItems(values)
+	else
+		gg.removeListItems(values)
+	end
 	gg.setValues(values)
 end
 
